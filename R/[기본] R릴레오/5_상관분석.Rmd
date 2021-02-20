@@ -1,0 +1,195 @@
+---
+title: "5_상관분석"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("tidyverse")
+install.packages("plotly")
+install.packages("ggplot2")
+install.packages("psych")
+install.packages("lawstat")
+install.packages("agricolae")
+install.packages("DescTools")
+```
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(ggplot2)
+library(psych)
+library(lawstat)
+library(agricolae)
+library(DescTools)
+```
+
+# <상관분석: 두개의 양적자료간의 관련성이 있는지 + 산점도>
+# 1. 산점도
+# 2. 상관계수
+# 3. 상관분석
+
+```{r}
+# 1. 산점도
+# x: carat, y:price
+
+diamonds %>%
+  ggplot2::ggplot(mapping = aes(x = carat, y = price)) +  # 표의 바탕+x,y축 생성
+  ggplot2::geom_point()
+
+# 1-1.점의 색깔
+diamonds %>%
+  ggplot2::ggplot(mapping = aes(x = carat, y = price)) +
+  ggplot2::geom_point(color = "purple")
+
+# 1-2.점의 크기
+diamonds %>%
+  ggplot2::ggplot(mapping = aes(x = carat, y = price)) +
+  ggplot2::geom_point(color = "purple", size = 0.5)
+
+# 1-3.집단을 다른 색으로 표현하기
+diamonds %>%
+  ggplot2::ggplot(mapping = aes(x = carat, y = price, color = cut)) +
+  ggplot2::geom_point(size = 0.5, shape = 0)
+
+# 1-4.양적자료가 가지는 값의 크기로 점을 표현하기
+diamonds %>%
+  ggplot2::ggplot(mapping = aes(x = carat, y = price, fill = table)) +
+  ggplot2::geom_point(size = 0.5, shape = 0)
+
+# 1-5.집단별로 산점도 작성하기(A집단의 X,y산점도)
+diamonds %>%
+  ggplot2::ggplot(mapping = aes(x = carat, y = price)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_wrap(~cut, nrow = 1, ncol = 5)  # cut(5개집단)에 대한 산점도 그림
+
+# 1-6.집단별로 회귀식 반영한 산점도 작성하기
+diamonds %>%
+  ggplot2::ggplot(mapping = aes(x = carat, y = price)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth() +
+  ggplot2::facet_wrap(~cut, nrow = 1, ncol = 5)
+
+```
+
+```{r}
+# 2. 상관계수
+
+# 2-1.공분산: x와y에 존재하는 다름을 평균내면 전체적으로 얼만큼 데이터가 차이나는지
+# 공분산 = (x1-x바)x(y1-y바) + ... + (xn-xn바)x(yn-yn바) / n-1
+
+# 2-2.피어슨 상관계수 r = 공분산 / (x의 표준편차 * y의 표준편차)
+#     - x의 표준편차: 루트(sum(xi-x바)^2 / (n-1))
+
+# -1 <= r <= 1
+# |r| -> 1일수록 직선의 관계 높다, 강하다 r -> 0일수록 직선의 관계가 없다
+# r의 부호가 +: 양의 상관관계, -:음의 상관관계
+# 0.0 <= |r| < 0.2: 상관관계가 없다
+# 0.2 <= |r| < 0.4: 약한 상관관계가 있다
+# 0.4 <= |r| < 0.6: 보통의 상관관계가 있다
+# 0.6 <= |r| < 0.8: 높은 상관관계가 있다
+# 0.8 <= |r| <= 1.0: 매우높은 상관관계가 있다
+
+# cor(data$variable1, data$variable2, method = "pearson")
+round(cor(cars$speed, cars$dist, method = "pearson"), digits = 2)
+
+cars %>%
+  dplyr::summarise(correlation = cor(speed, dist, method = "pearson"),
+                   digits = 3)
+
+# attitude: 7개의 양적 자료
+cor(attitude, method = "pearson")
+round(cor(attitude, method = "pearson"), digits = 3)
+
+# 2-3. Spearman 상관계수
+# rs = 1 - 6 * sum(di^2) / n(n^2-1)
+
+# x, y 양적자료
+# x, y 정규성 -> 정규성 가정 깨지면 Pearson 못함 -> 대안: Spearman, Kendall
+# x, y가 순위데이터라면 Pearson 사용X, Spearman, Kendall사용해야한다 
+# 2. Spearman의 상관계수
+attitude %>%
+  dplyr::select(rating, complaints) %>%
+  dplyr::slice(1:6)  # 6개 행을 잘라냄
+  cor(method = "spearman")
+
+# dplyr::summarise: 집계
+cars %>%
+  dplyr::summarise(correlation = round(cor(cars$speed, cars$dist, method = "spearman"), digits = 3))
+#    rating  complaints     di     di^2
+# 1  43(1.5)   51(1)          0.5    (0.5)^2
+# 2  63(4)     64(4)          0       0
+# 3  71(5)     70(5)          0       0
+# 4  61(3)     63(3)          0       0
+# 5  81(6)     78(6)          0       0
+# 6  43(1.5)   55(2)          -0.5    (-0.5)^2
+# rs = 1 - 6 * sum(di^2) / n * (n^2 - 1) = 0.986
+# 결론 : x가 증가할 때 y가 증가하는 양의 상관관계
+
+# 3. Kendall의 상관계수
+# tau = (nc - nd) / 0.5 * n * (n - 1)
+# x      y      =>  x     y   =>  x     y     => c(y기준증가) d(y기준감소)
+# 10    20         10    20        1     1             3                 0
+# 20    30         15    40        2     3             1                 1
+# 15    40         20    30        3     2             1                 0
+# 40    50         40    50        4     4         nc=3+1+1=5   nd=0+1+0=1
+# tau = 2/3
+x <- c(10, 20, 15, 40)
+y <- c(20, 30, 40, 50)
+cor(x, y, method = "kendall")
+round(cor(x, y, method = "kendall"), digits = 3)
+
+round(cor(cars$speed, cars$dist, method = "kendall"), digits = 3)
+
+# attitude 데이터의 각 변수간의 상관계수 찾기
+round(cor(attitude, method = "kendall"), digits = 3)
+
+# 4. 상관분석 가설
+# 4-1. 상관분석(Pearson)
+# Ho: p = 0
+# H1: p != 0
+
+# 알파 = 0.05
+# r => 표준화 = (r - 평균) / 표준편차, 표편=루트(분산)
+# r = (r - E(r)) / 루트(V(r)) = (r - p) / 루트((1-r^2) / (n-2)) = t ~ t(n-2)
+
+# 표본조사 r -> t = t* from 유의확률
+
+# Ho(귀무가설): speed와 dist간에 직선의 관계가 없다.
+# H1(대립가설): speed와 dist간에 직선의 관계가 있다.
+# cor.test(양적자료1, 양적자료2, method = "pearson")
+options(scipen = 100)  # 이 함수 적용하면 p-value를 그냥 숫자그대로로 볼 수 있다.
+cor.test(cars$speed, cars$dist, method = "pearson")
+# 위에는 상관계수, 아래는 p-value -> 양적자료간 상관계수 존재하는지 확인
+psych::corr.test(attitude, method = "pearson")
+# 해설: r = 0.807 -> t = 9.464, 자유도=n-2=48, p-value = 0.000
+# 결론: 대립가설 채택. 자동차의 speed와 dist 간에는 통계적으로 양의 상관관계를 가진다.
+
+# 4-2. 상관분석(Spearman)
+# Ho: p = 0 -> speed와 dist간에 직선의 관계가 없다.
+# H1: p != 0 -> speed와 dist간에 직선의 관계가 있다.
+
+# 알파 = 0.05
+# rs => 표준화 = (rs - 평균) / 표준편차, 표편=루트(분산)
+# rs = (rs - E(rs)) / 루트(V(rs)) = (rs - ps) / 루트(1 / (n-1)) = Z ~ N(0, 1^2)
+cor.test(cars$speed, cars$dist, method = "spearman")
+cars %>% dplyr::glimpse()  # car table의 str확인
+# 해설: rs = 0.830 -> Z = 3532.8, p-value = 0.000
+# 결론: 대립가설 채택. 자동차의 speed와 dist 간에는 통계적으로 양의 상관관계를 가진다.
+
+# 4-3. 상관분석(Kandall)
+# Ho: tau = 0 -> speed와 dist간에 직선의 관계가 없다.
+# H1: tau != 0 -> speed와 dist간에 직선의 관계가 있다.
+
+# 알파 = 0.05
+# hat(tau) => 표준화 = (hat(tau) - 평균) / 표준편차, 표편=루트(분산)
+# hat(tau) = (hat(tau) - E(hat(tau))) / 루트(V(hat(tau))) 
+#            = (hat(tau) - tau) / 루트((2*(2n+5)) / 9*n*(n-1)) = Z ~ N(0, 1^2)
+cor.test(cars$speed, cars$dist, method = "kandal")
+
+# 해설: tau = 0.669 -> Z = 6.666, p-value = 0.000
+# 결론: 대립가설 채택. 자동차의 speed와 dist 간에는 통계적으로 양의 상관관계를 가진다.
+```

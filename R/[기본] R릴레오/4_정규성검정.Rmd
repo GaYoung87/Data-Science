@@ -1,0 +1,123 @@
+---
+title: "4_정규성 검정"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# [[정규분포를 따르지 않을 때 -> 비모수적 방법]]
+# 가장 대표적인 것: Wilcoxon's Rank Sum Test
+# Ho: MA = MB -> MA - MB = 0
+# H1: MA > MB, MA < MB, MA != MB
+
+# 알파=0.05 -> W+사용
+# A : 73 42 90 58 62
+# B : 50 23 68 40 45
+# 1)나열: 23 40 42 45 50 58 62 68 73 90
+# 2)순위:  1  2  3  4  5  6  7  8  9 10
+# 3)WA = 3+6+7+9+10=35, WB = 1+2+4+5+8=20
+# 4)WA/nA = 35/5 = 7, WA/nA = 20/5 = 4  => 귀무가설 or 대립가설 채택확률 높음
+
+# 알파=0.05일 때, W+ >= W(알파/2, nA, nB) or W+ < W(1-알파/2, nA, nB) -> 대립
+# W+ -> Zw+ = (W+ - E(W+)) / 루트(V(W+))
+# E(W+) = nB(nA+nB+1) / 2
+# V(W+) = nA x nB x (nA+nB+1)/12
+
+```{r}
+install.packages("tidyverse")
+install.packages("plotly")
+install.packages("ggplot2")
+install.packages("psych")
+install.packages("lawstat")
+install.packages("agricolae")
+install.packages("DescTools")
+install.packages("exactRankTests")
+```
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(ggplot2)
+library(psych)
+library(lawstat)
+library(agricolae)
+library(DescTools)
+library(exactRankTests)
+```
+
+```{r}
+# 1. Wilcoxon's rank sum test (정규성을 따르지 않는다고 가정)
+
+# 예제 데이터: sleep
+# 변수명 extra(수면제 먹고 늘어난시간), group(수면제제품), ID(데이터식별)
+
+# Ho(귀무가설): A수면제의 수면시간 평균과 B수면제의 수면시간의 평균은 같다.
+# H1(대립가설): A수면제의 수면시간 평균과 B수면제의 수면시간의 평균은 같지 않다.
+
+# Ho(귀무가설): 두 수면제 제품 간에 수면시간에 차이가 없다.
+# H1(대립가설): 두 수면제 제품 간에 수면시간에 차이가 있다.
+
+# --------------------------------------------------------------------------------
+
+# wilcox.test(formula = variable ~ variable, data = , alternative = )
+# wilcox.test(formula = 양적자료 ~ 질적자료, data = , alternative = )
+
+wilcox.test(formula = extra ~ group, data = sleep, alternative = "two.sided")
+# 	Wilcoxon rank sum test with continuity correction
+#data:  extra by group
+#W = 25.5, p-value = 0.06933
+#alternative hypothesis: true location shift is not equal to 0
+
+# 결론: 유의확률이 0.069이므로 유의수준 0.05에서 두 수면제 제품에 따라
+#       수면시간에는 통계적으로 유의있는 차이는 없는 것으로 나타났다.
+
+# 2. tie를 고려한 Wilcoxon's rank sum test
+# exactRankTests::wilcox.exact(formula = variable ~ variable,
+#                              data = , alternative = )
+
+exactRankTests::wilcox.exact(formula = extra ~ group, 
+                             data = sleep, alternative = "two.sided")
+
+```
+
+# **정규성 검정**
+```{r}
+by(sleep$extra, sleep$group, shapiro.test)
+str(by(sleep$extra, sleep$group, shapiro.test))
+
+by(sleep$extra, sleep$group, shapiro.test)[[1]]
+str(by(sleep$extra, sleep$group, shapiro.test)[[1]])
+
+by(sleep$extra, sleep$group, shapiro.test)[[1]]$p.value
+by(sleep$extra, sleep$group, shapiro.test)[[2]]$p.value
+
+# Ho(귀무가설): 두 수면제 제품 간에 수면시간에 차이가 없다.
+# H1(대립가설): 두 수면제 제품 간에 수면시간에 차이가 있다.
+result <- list()
+
+if((by(sleep$extra, sleep$group, shapiro.test)[[1]]$p.value >=0.05) &
+   (by(sleep$extra, sleep$group, shapiro.test)[[2]]$p.value >= 0.05)){
+      # 정규성 가정을 만족
+      # 등분산 검정
+      if(var.test(formula = extra ~ group, data = sleep)$p.value >= 0.05){
+        # 등분산이 가정된 two sample t-test
+        result <- t.test(formula = extra ~ group, data = sleep, 
+                         alternative = "two.sided",
+                         var.equal = TRUE)
+      }else{  # 이분산이 가정된 two sample t-test
+        result <- t.test(formula = extra ~ group, data = sleep, 
+                         alternative = "two.sided",
+                         var.equal = FALSE)
+      }
+}else{
+  # Wilcoxon's rank sum test
+  result <- wilcox.test(formula = extra ~ group, data = sleep,
+                        alternative = "two.sided")
+}
+
+result$method  # 분석 방법의 이름
+result$statistic  # 검정통계량: t or v
+result$p.value  # 유의확률
+```
