@@ -12,12 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 #   * =는 최상위 수준에서만 사용가능
 #   * <-는 어느곳에서든 사용 가능
 
+
 # [2.함수호출 시 인자 지정]
 # 함수 foo(a, b, c=1, d=2)
 # foo(3, 4) -> a=3, b=4, c=1, d=2
 # foo(3, 4, 1) -> a=3, b=4, c=1, d=2
 # foo(3, 4, 5) -> a=3, b=4, c=5, d=2
 # foo(d=5, a=3, b=4) -> a=3, b=4, c=1, d=5
+
 
 # [3.스칼라]
 # NA와 NULL의 차이
@@ -41,11 +43,113 @@ c(TRUE, TRUE) && c(TRUE, TRUE)  # TRUE
 
 ```
 
+# 팩터
+```{r}
+# 범주형 데이터를 표현하기 위함
+# 범주형 데이터 = 사전에 정해진 특정 유형으로만 분류되는 경우(관측값+level)
+# 범주형데이터(명목형, 순서형) <-> 수치형 데이터
+
+# [범주형데이터]
+# 1.팩터값 생성: factor(x, levels, ordered)
+# level 생략 -> 데이터로부터 자동으로 파악
+sex <- factor("m", c("m", "f"))  # ordered: TRUE=순서형, FALSE=명목형, 기본값=FALSE
+sex
+
+# 2.레벨 개수 반환: nlevels(x)
+nlevels(sex)
+
+# 3.레벨의 목록반환: levels(x)
+levels(sex)
+# 3-1.레벨 직접 수정
+levels(sex) <- c("male", "female")
+
+# 4.펙터인지 판단: is.factor(x)
+is.factor(sex)
+
+# [순서형데이터]
+# 5.순서형 팩터 생성: ordered(x)
+# factor(x, levels, ordered=TRUE)
+ordered("a", c("a", "b", "c"))  # levels: a < b < c
+
+# 6.순서형 팩터인지 확인: is.ordered(x)
+```
+# 벡터
+```{r}
+# 1.백터 생성
+x <- c(1, 3, 4)
+
+# 2.객체 이름 반환
+names(x) <- c("kim", "seo", "park")
+
+# 3.객체에 이름 저장
+names <- ()
+
+# 다른 타입이면 형변환
+# NULL < raw < logical < integer < double < complex < character < list < expression
+
+# 백터는 중첩될 수 없다
+c(1, 2, 3, c(1, 2, 3))  # 1 2 3 1 2 3
+
+
 # 
 # 
 # 
 # 
+```
+
+```{r}
+x1 <- c("a", "b", "c")
+length(x1)  # 3
+nrow(x1)    # NULL(행렬만 가능)
+NROW(x1)    # 3   (벡터와 행렬 모두 가능)
+```
+
+```{r}
+xx <- c(1, 2, 3)
+yy <- c(1, 3, 4)
+
+# 1.동일한지 판단 : 하나의 결과
+identical(xx, yy)
+
+# 2.합집합 구하기
+union(xx, yy)
+
+# 3.교집합 구하기
+intersect(xx, yy)
+
+# 4.차집합 구하기
+setdiff(xx, yy)
+
+# 5.같은 집합인지 확인
+setequal(xx, yy)
+setequal(c("a", "b", "c"), c("a", "d"))
+setequal(c("a", "b", "c"), c("a", "b", "c", "c"))  # TRUE
+identical(c("a", "b", "c"), c("a", "b", "c", "c"))  # FALSE
+
+
+# 6.포함여부확인
+"d" %in% xx
+
+# 7.연산자
+x <- c(1, 2, 3, 4, 5)
+10 - x
+```
+
 # 
+```{r}
+
+```
+
+# 
+```{r}
+
+```
+
+# 
+```{r}
+
+```
+
 # 
 # 
 # 
