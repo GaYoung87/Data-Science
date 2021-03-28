@@ -1,0 +1,667 @@
+---
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# [1.iris데이터] (분류에 적합한 데이터)
+```{r}
+head(iris)
+str(iris)
+
+iris3  # 3차원 배열형태로 저장
+```
+
+
+# [2.파일입출력]
+# csv파일 입출력
+```{r}
+# csv파일을 데이터프레임으로 읽기
+read.csv(
+  file,
+  header = FALSE,
+  na.strings = "NA",  # 기본값은 "NA", "NA"로 저장된 문자열들은 R의 NA로 저장
+  stringsAsFactors = default.stringsAsFactors()  # 문자열을 팩터로 저장할지, 문자열로 저장할지 지정, 기본=TRUE
+)
+
+# 데이터프레임을 csv로 저장
+write.csv(
+  x, 
+  file = "",
+  row.names = TRUE  # TRUE이면 행 이름을 csv파일에 포함해 저장
+)
+```
+
+```{r}
+a <- read.csv("a.csv")
+str(a)
+
+b <- read.csv("b.csv")
+names(b) <- c("id", "name", "score")
+str(b)  # name이 factor형태
+x$name <- as.character(x$name)
+
+# 처음부터 문자열을 팩터가 아닌 문자열 타입으로 인식
+a_string <- read.csv("a.csv", stringsAsFactors = FALSE)
+str(a_string)
+
+# 숫자 들어와야하는 곳에 문자 -> NA처리
+c <- read.csv("c.csv", na.strings = c("NIL"))
+
+write.csv(c, "d.csv", row.names = FALSE)
+# row.names = FALSE이면 앞에 순서를 나타내는 열이 존재하지 않음
+# row.names를 지정하지 않으면 순서를 나타내는 열이 생긴채로 csv파일로 저장됨
+```
+
+# 객체의 파일 입출력
+```{r}
+# save: 저장
+save(
+  ...,                 # 저장할 객체의 이름
+  list = character(),  # 저장할 객체의 이름을 벡터로 지정할 경우 ... 대신 사용
+  file                 # 파일명
+)
+
+# load: 파일로부터 객체를 메모리로 읽어들인다
+load(
+  file  # 파일명
+)
+```
+
+```{r}
+rm(list = ls())
+a <- 1:5
+b <- 6:10
+c <- 11:15
+save(list = ls(), file = "abc.RData")
+```
+
+```{r}
+rm(list = ls())
+ls()  # character(0)
+
+load("abc.RData")
+ls()  # [1] "a" "b" "c"
+```
+
+
+# [3.데이터프레임의 행과 컬럼 합치기]
+# rbind
+```{r}
+rbind(c(1, 2, 3), c(4, 5, 6))
+#      [,1] [,2] [,3]
+# [1,]    1    2    3
+# [2,]    4    5    6
+
+x <- data.frame(id=c(1, 2), name=c("a", "b"), stringsAsFactors=F)
+y <- rbind(x, c(3, "c"))
+y
+#   id  name
+# 1  1     a
+# 2  2     b
+# 3  3     c
+```
+
+# cbind
+```{r}
+cbind(c(1, 2, 3), c(4, 5, 6))
+y <- cbind(x, greek=c("alpha", "beta"))
+y <- cbind(x, greek=c("alpha", "beta"), stringsAsFactors=F)
+
+# 데이터 프레임에 새로운 컬럼을 추가: cbind( )를 사용하지 않고 df$colname <- data 형태로도 추가 가능
+```
+
+
+# [4.apply 계열함수]
+# apply()
+#  - 배열 또는 행렬에 주어진 함수를 적용한 뒤 그 결과를 벡터, 배열, 리스트로 반환
+#  - 배열 또는 행렬에 적용
+#  - 행렬의 행 또는 열방향으로 특정 함수를 적용
+```{r}
+apply(
+  X,          # 배열 또는 행렬
+  MARGIN = ,  # 함수 적용 방향: 1=행, 2=열, c(1,2)는 행과열 모두 의미
+  FUN =       # 적용함수
+)
+# 반환값
+# 1. FUN이 길이 1인 벡터들을 반환한 경우 벡터
+# 2. FUN이 길이 1보다 큰 벡터들을 반환한 경우 행렬
+# 3. FUN이 서로 다른 길이의 벡터들을 반환한 경우 리스트
+```
+
+```{r}
+d <- matrix(1:9, ncol = 3)
+d
+
+apply(d, 1, sum)
+apply(d, 2, sum)
+```
+
+```{r}
+head(iris)
+
+apply(iris[,1:4], 2, sum)
+# Sepal.Length  Sepal.Width Petal.Length  Petal.Width 
+#        876.5        458.6        563.7        179.9
+
+colSums(iris[,1:4])  # 바로 위의 apply와 동일한 결과
+# colSums(), colMeans(), rowSums(), rowMeans() 존재
+```
+
+# lapply()
+#  - list반환
+```{r}
+lappy(
+  X,    # 벡터,리스트,표현식,데이터 프레임
+  FUN,  # 적용할 함수
+  ...   # 추가인자, 이 인자들은 FUN에 전달
+)
+
+# unlist: 리스트를 벡터로 변환(반환값 벡터)
+unlist(
+  X,                  # R객체, 보통 리스트 또는 벡터 
+  recursive = FALSE,  # x에 포함된 리스트 역시 재귀적으로 변환할지 여부
+  use.names = TRUE    # 리스트 내 값의 이름을 보존할지 여부
+)
+
+# do.call: 함수를 리스트로 주어진 인자에 적용하여 결과반환(반환값 호출결과)
+do.call(
+  what = ,  # 호출할 함수
+  args =    # 함수에 전달할 인자의 리스트
+)
+```
+
+```{r}
+result <- lapply(1:3, function(x) {x*2})
+result
+# [[1]]
+# [1] 2
+# 
+# [[2]]
+# [1] 4
+# 
+# [[3]]
+# [1] 6
+
+result[[1]]
+# [1] 2
+
+unlist(result)  # [1] 2 4 6
+
+lapply(iris[, 1:4], mean)
+# $Sepal.Length
+# [1] 5.843333
+# 
+# $Sepal.Width
+# [1] 3.057333
+# 
+# $Petal.Length
+# [1] 3.758
+# 
+# $Petal.Width
+# [1] 1.199333
+```
+
+# sapply()
+#  - lapply()와 유사하지만, 리스트 대신 행렬, 벡터 등의 데이터 타입으로 결과 반환
+#  - 한가지 타입만 저장 가능한 데이터 타입인 벡터 또는 행렬 반환
+# FUN이 한개의 값 반환
+```{r}
+x <- sapply(iris[, 1:4], mean)
+# Sepal.Length  Sepal.Width Petal.Length  Petal.Width 
+#     5.843333     3.057333     3.758000     1.199333 
+
+class(sapply(iris[, 1:4], mean))  # numeric
+
+# 반환한 벡터 데이터 프레임으로 변환
+as.data.frame(x)
+#                        x
+# Sepal.Length    5.843333
+# Sepal.Width     3.057333
+# Petal.Length    3.758000
+# Petal.Width     1.199333
+
+as.data.frame(t(x))
+#     Sepal.Length  Sepal.Width Petal.Length  Petal.Width 
+#  1      5.843333     3.057333     3.758000     1.199333
+
+# 각 컬럼의 데이터 타입 구하기
+sapply(iris, class)
+# Sepal.Length  Sepal.Width Petal.Length  Petal.Width      Species 
+#    "numeric"    "numeric"    "numeric"    "numeric"     "factor" 
+```
+
+# FUN이 두개 이상의 값 반환
+```{r}
+y <- sapply(iris[, 1:4], function(x) {x > 3})
+class(y)  # [1] "matrix" "array" 
+head(y)
+#      Sepal.Length Sepal.Width Petal.Length Petal.Width
+# [1,]         TRUE        TRUE        FALSE       FALSE
+# [2,]         TRUE       FALSE        FALSE       FALSE
+# [3,]         TRUE        TRUE        FALSE       FALSE
+```
+
+# tapply()
+#  - 그룹별로 함수를 적용하기 위한 apply 계열함수
+#  - 배열로 반환
+#  - 클러스터링 알고리즘 수행 후 같은 클러스터에 속한 데이터들의 x좌표의 평균, y좌표의 평균을 계산
+```{r}
+tapply(
+  X,      # 벡터
+  index,  # 데이터를 그룹으로 묶을 색인, 팩터를 지정해야하며 팩터가 아닌 타입이 지정되면 팩터로 형변환
+  FUN,    # 각 그룹마다 적용할 함수,
+  ...     # 추가인자, 이 인자들은 FUN에 전달
+)
+
+# 1~10까지의 합 
+tapply(1:10, rep(1, 10), sum)
+#  1 
+# 55
+
+# 짝수와 홀수 합
+tapply(1:10, 1:10 %% 2, sum)
+#  0  1 
+# 30 25 
+```
+
+```{r}
+m <- matrix(1:8,
+            ncol = 2,
+            dimnames = list(c("spring", "summer", "fall", "winter"),
+                       c("male", "female")))
+
+# 성별, 분기별 그룹
+tapply(m, list(c(1, 1, 2, 2, 1, 1, 2, 2),
+               c(1, 1, 1, 1, 2, 2, 2, 2)), sum)
+#   1  2
+# 1 3 11
+# 2 7 15
+```
+
+# mapply()
+#  - sapply()와 유사하지만, 다수의 인자를 함수에 넘긴다
+```{r}
+mapply(
+  FUN,  # 실행할 함수 
+  ...   # 적용할 인자
+)
+
+mapply(rnorm,
+       c(1, 2, 3),     # n
+       c(0, 10, 100),  # mean
+       c(1, 1, 1)      # sd
+)
+```
+
+
+# [5.데이터를 그룹으로 묶은 후 함수 호출하기]
+```{r}
+install.packages("doBy")
+library(doBy)
+```
+
+# summaryBy()
+#  - 데이터프레임을 컬럼 값에 따라 그룹으로 묶은 후 요약값 계산
+```{r}
+doBy::summary_by(
+  formula,               # 요약을 수행할 포뮬러 
+  data = parent.frame()
+)
+
+summary(iris)
+#   Sepal.Length    Sepal.Width     Petal.Length    Petal.Width          Species  
+#  Min.   :4.300   Min.   :2.000   Min.   :1.000   Min.   :0.100   setosa    :50  
+#  1st Qu.:5.100   1st Qu.:2.800   1st Qu.:1.600   1st Qu.:0.300   versicolor:50  
+#  Median :5.800   Median :3.000   Median :4.350   Median :1.300   virginica :50  
+#  Mean   :5.843   Mean   :3.057   Mean   :3.758   Mean   :1.199                  
+#  3rd Qu.:6.400   3rd Qu.:3.300   3rd Qu.:5.100   3rd Qu.:1.800                  
+# Max.   :7.900   Max.   :4.400   Max.   :6.900   Max.   :2.500
+
+# Sepal.Width, Sepal.Length를 Species별로 요약
+x <- doBy::summaryBy(Sepal.Width + Sepal.Length ~ Species, iris)
+#      Species   Sepal.Width.mean   Sepal.Length.mean
+# 1     setosa              3.428               5.006
+# 2 versicolor              2.770               5.936
+# 3  virginica              2.974               6.588
+```
+
+# orderBy()
+#  - 그룹으로 묶는 기능은 없다
+```{r}
+# order
+order(
+  ...,               # 정렬데이터
+  na.last = TRUE,    # na.last는 NA값을 정렬한 결과의 어디에 둘 것인지를 제어
+                     # na.last = TRUE는 NA값을 정렬한 결과의 마지막에둔다.
+                     # na.last = FALSE는 정렬한 값의 처음에 둔다.
+                     # na.last = NA는 NA값을 정렬 겱롸에섷 제외
+  decreasing = TRUE
+)
+
+# orderBy(): 반환값은 order와 동일
+doBy::orderBy(
+  formula,  # 정렬할 기준을 지정한 표물러
+            # ~의 좌측은 무시하며, ~우측에 나열한 이름에 따라 데이터 정렬
+  data
+)
+```
+
+```{r}
+# order
+iris[order(iris$Sepal.Length, iris$Sepal.Width), ]
+
+# orderBy()
+# 모든 데이터를 Sepal.Width로 정렬
+doBy::orderBy(~ Sepal.Width, iris)
+
+# 모든 데이터를 Species, Sepal.Width 순으로 정리
+doBy::orderBy(~ Species + Sepal.Width, iris)
+```
+
+# sampleBy()
+#  - 데이터를 그룹으로 묶은 후, 각 그룹에서 샘플 추출
+#  - base::sample()에 대응
+```{r}
+# base::sample()
+sample(x,                # 샘플을 뽑을 데이터 벡터, 만약 길이1인 숫자 n이 지저되면 1:n에서 샘플이 선택
+       size,             # 샘플의 크기
+       replace = FALSE,  # 복원추출 여부
+       prob =            # 데이터가 뽑힐 가중치
+                         # ex. x=c(1,2,3)에서 두개의 샘플을 뽑되, 각 샘플이 뽑일 확룰은 50,20,30퍼이면
+                         # size=2, prob=c(5, 2, 3) -> prob에 지정한 값의 합이 1일필요는 없다
+)
+
+# sampleBy()
+doBy::sampleBy(
+  formula,                # 우측에 나열한 이름에 따라 그룹으로 묶임
+  frac=0.1,               # 추출할 샘플의 비율이며 기본값은 10%
+  replace = FALSE,        # 복원추출 여부
+  data = parent.frame(),  # 데이터를 추출할 데이터 프레임
+  systematic = FALSE      # 계톡추출 사용여부(첫샘플을 추출한 뒤 동일한 간격에 있는 데이터를 추출하는 방법)
+)
+
+sample(1:10, 4)                  # 10 3 8 2 6
+sample(1:10, 4, replace = TRUE)  # 8 1 6 6 10
+
+iris[sample(NROW(iris), NROW(iris)), ]  # NROW(iris)는 주어젠 데이터프레임 또는 벡터의 행의 수 반환
+```
+
+
+# 데이터 분리 및 병합
+# split(): 주어진 조건에 따라 데이터 분리 
+```{r}
+# 결과는 리스트
+split(
+  x,  # 분리할 벡터 또는 데이터프레임
+  f   # 분리할 기준을 저장한 팩터
+)
+
+# iris$Species에 따라 분리하고 결과를 리스트에 저장
+split(iris, iris$Species)
+
+# split()의 실행결과가 리스트이므로 split() 후 lapply()를 적용화면 iris의 종별 Sepal.Length의 평균을 구할수있음
+lapply(split(iris$Sepal.Length, iris$Species), mean)
+# $setosa
+# [1] 5.006
+# 
+# $versicolor
+# [1] 5.936
+# 
+# $virginica
+# [1] 6.588
+```
+
+# subset(): 주어진 조건을 만족하는 데이터 선택
+```{r}
+subset(
+  x,          # 일부를 취할 객체
+  subset = ,  # 데이터를 취할 것인지 여부
+  select =    # 데이터프레임의 경우 선택하고자하는 컬럼
+)
+
+# 특정 컬럼 선택
+subset(iris, Species == "setosa")
+
+# 특정 컬럼 제외
+subset(iris, select = -c(Sepal.Length, Species))
+
+# names()와 %in%을 사용해서 제외하는 방법과 비교
+iris[, !names(iris) %in% c("Sepal.Length", "Species")]
+
+```
+
+# merge(): 데이터를 공통된 값에 기준해 병합
+```{r}
+merge(
+  x,          # 병합할 데이터프레임 
+  y, # 병합할 데이터프레임
+  by,           
+  by.x = by,
+  by.y = by,
+  all = FALSE,  # all.x, all.y를 이용해 x, y중 특정 쪽에 공통된 값이 없더라도 항상 결과에 포함되게 할 수 있다.
+                # all은 공통된 값이 x, y중 한쪽에 없을 때의 처리. 
+                # 기본값은 FALSE -> x,y모두에 공통된 데이터가 있을 때만 해당 행이 병합결과에 포함
+                # TRUE -> x,y중 한쪽에 공통된 값을 가지는 행이 없으면 해당쪽을 NA로 채워 병합 -> x,y의 전체행이 결과에 포함
+  all.x = ,
+  all.y = 
+)
+
+# -------------------------------------------------------------------------------------------------------------------------------------------
+
+x <- data.frame(name = c("a", "b", "c"), math = c(1, 2, 3))
+y <- data.frame(name = c("b", "a", "c"), english = c(4, 5, 6))
+merge(x, y)
+#   name  math  english
+# 1    a     1        5
+# 2    b     2        4
+# 3    c     3        6
+
+cbind(x, y)
+#   name  math  name  english
+# 1    a     1     b        4
+# 2    b     2     a        5
+# 3    c     3     c        6
+
+# -------------------------------------------------------------------------------------------------------------------------------------------
+
+x <- data.frame(name = c("a", "b", "c"), math = c(1, 2, 3))
+y <- data.frame(name = c("a", "b", "d"), english = c(4, 5, 6))
+merge(x, y)
+#   name  math  english
+# 1    a     1        4
+# 2    b     2        5
+
+merge(x, y, all = TRUE)
+#   name  math  english
+# 1    a     1        4
+# 2    b     2        5
+# 3    c     3       NA
+# 4    d    NA        6 
+```
+
+
+# 데이터 정렬
+# sort()
+```{r}
+sort(
+  x,
+  decreasing = FALSE,
+  na.last = NA
+  # 값을 정렬한 결과의 어디에 둘건지 제어.
+  # na.last=TRUE -> NA값을 정렬한 결과의 마지막에 둔다.
+  # na.last=FALSE -> 정렬한 값의 처음에 둔다
+  # na.last=NA -> NA값을 정렬결과에서 제외
+)
+```
+
+# order()
+# 반환값이 index
+```{r}
+x <- c(20, 11, 33, 50, 37)
+order(x, decreasing = TRUE)  # 4 5 3 1 2
+
+iris[order(iris$Sepal.Length, iris$Petal.Length), ]
+```
+
+
+# 데이터 프레임 컬럼 접근
+# with(): 코드블록 안에서 필드이름만으로 데이터를 곧바로 접근 가능
+```{r}
+# 반환값은 expr의 평가값
+with(
+  data,  # 환경을 만들 데이터
+  expr,  # 평가할 표현식, expr의 예 -> {...}
+)
+
+print(mean(iris$Sepal.Length))
+print(mean(iris$Sepal.Width))
+# 위의 두 명령은 컬럼을 접근할 때마다 매번 iris$colname 형태로 코드를 적어야했다.
+# with를 사용하면 각 컬럼을 곧바로 접근할 수 있음
+with(
+  iris,
+  {
+    mean(iris$Sepal.Length)
+    mean(iris$Sepal.Width)
+  }
+)
+# [1] 5.843333
+# [1] 3.057333
+```
+
+# within(): with()와 동일한 기능, 데이터에 저장된 값을 손쉽게 변경
+```{r}
+x <- data.frame(val = c(1, 2, 3, 4, NA, 5, NA))
+#   val
+# 1   1
+# 2   2
+# 3   3
+# 4   4
+# 5  NA
+# 6   5
+# 7  NA
+x <- within(x, {
+  valk <- ifelse(is.na(val), median(val, na.rm=TRUE), val)
+})
+# x$val[is.na(x$val)] <- median(val, na.rm=TRUE)와 동일
+#   val
+# 1   1
+# 2   2
+# 3   3
+# 4   4
+# 5   3
+# 6   5
+# 7   3
+```
+
+```{r}
+# 결측치를 해당 종의 중앙값으로 바꾸기
+iris[1, 1] = NA
+iris
+
+median_per_species <- sapply(split(iris$Sepal.Length, iris$Species), median, na.rm=TRUE)
+iris <- within(iris,{
+  Sepal.Length <- ifelse(is.na(Sepal.Length), median_per_species[Species], Sepal.Length)
+})
+```
+
+# attach(): attach()이후 코드에서는 필드 이름만으로 데이터를 바로 접근가능
+```{r}
+
+```
+
+# detach(): detach()이후 코드에서 더이상 필드이름으로 데이터를 곧바로 접근할 수 없게 함
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
