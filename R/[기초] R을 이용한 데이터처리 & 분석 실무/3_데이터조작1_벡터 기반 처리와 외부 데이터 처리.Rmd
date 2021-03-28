@@ -567,101 +567,123 @@ iris <- within(iris,{
 ```
 
 # attach(): attach()이후 코드에서는 필드 이름만으로 데이터를 바로 접근가능
-```{r}
-
-```
-
 # detach(): detach()이후 코드에서 더이상 필드이름으로 데이터를 곧바로 접근할 수 없게 함
+# search(): R 객체에 대한 검색경로 반환
 
+
+# 조건에 맞는 데이터의 색인 찾기
 ```{r}
+# 1.which(): 조건이 참인 색인 반환
+which(
+  x  # 논리값 벡터 도는 배열
+)
 
+# 2.which.max(): 최댓값의 위치 반환
+which.max(
+  x  # 숫자벡터
+)
+
+# 3.which.min(): 최소값의 위치 반환
+which.min(
+  x  # 숫자벡터
+)
 ```
 
 ```{r}
+# 행반환1
+subset(iris, Species == "setosa")
 
+# 행반환2
+# 색인에 진리값이 지정되도록 조건적기
+iris[iris$Species == "setosa", ]
+
+# 조건만족하는 행의 색인 반환
+which(iris$Species == "setosa")
+
+which.max(iris$Sepal.Length)
+which.min(iris$Sepal.Length)
+```
+
+
+# 그룹별 연산
+```{r}
+# aggregate: 데이터를 분할하고 각 그룹마다 요약치 계산
+aggregate(
+  x,   # R의 객체
+  by,  # 그룹으로 묶을 값의 리스트
+  FUN  # 그룹별로 요약치 계산에 사용할 함수
+)
+
+aggregate(
+  formula,    # y ~ x형태로 y는 계산에 사용될 값이며, x는 그룹으로 묶을 때 사용할 기준값
+  data,       # formula를 적용할 데이터
+  FUN         # 그룹별로 요약치 계산에 사용할 함수
+)
 ```
 
 ```{r}
+aggregate(Sepal.Width ~ Species, iris, mean)
+#      Species  Sepal.Width
+# 1     setosa        3.428
+# 2 versicolor        2.770
+# 3  virginica        2.974
 
+# 같은결과
+tapply(iris$Sepal.Width, iris$Species, mean)
+#  setosa versicolor  virginica 
+#   3.428      2.770      2.974 
 ```
 
+
+# 편리한 처리를 위한 데이터의 재표현
 ```{r}
+# A B C
+# 3 5 4
+# 2 3 5
+# 9 2 7
+# 이 형태를 그래프를 그리거나 데이터를 조작하려하면 불편하다,
 
+# M V
+# A 3
+# A 2
+# A 9
+# B 5
+# B 3
+# B 2
+# C 4
+# C 5
+# C 7
+# 이런 형태로 변환해야 summaryBy(V ~ M, data)명령으로 쉽게 분석 가능
 ```
 
+# stack(): 다수의 벡터를 하나의 벡터로 합치면서 관측값이 온 곳을 팩터로 명시
 ```{r}
+stack(
+  x  # 리스트 또는 데이터 프레임
+)
 
+x <- data.frame(a=c(3,2,9),
+                b=c(5,3,2),
+                c=c(4,5,7))
+x_stacked <- stack(x)  # 세로로 변환
+
+summaryBy(values ~ ind, x_stacked)
+#    ind  values.mean
+# 1    a     4.666667
+# 2    b     3.333333
+# 3    c     5.333333
 ```
 
+# unstack(): stack()의 역 연산으로 원래 형태로 돌려보낸다.
 ```{r}
+unstack(
+  x,
+  form =   # ~왼쪽에는 관측값, 오른쪽에는 관측값이 온 곳을 표현하는 벡터 명시
+)
 
+unstack(x_stacked, values~ind)
+#   a b c
+# 1 3 5 4
+# 2 2 3 5
+# 3 9 2 7
 ```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
-```
-
