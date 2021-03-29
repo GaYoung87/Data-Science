@@ -389,7 +389,7 @@ iris[sample(NROW(iris), NROW(iris)), ]  # NROW(iris)는 주어젠 데이터프�
 ```
 
 
-# 데이터 분리 및 병합
+# [6.데이터 분리 및 병합]
 # split(): 주어진 조건에 따라 데이터 분리 
 ```{r}
 # 결과는 리스트
@@ -482,7 +482,7 @@ merge(x, y, all = TRUE)
 ```
 
 
-# 데이터 정렬
+# [7.데이터 정렬]
 # sort()
 ```{r}
 sort(
@@ -571,7 +571,7 @@ iris <- within(iris,{
 # search(): R 객체에 대한 검색경로 반환
 
 
-# 조건에 맞는 데이터의 색인 찾기
+# [8.조건에 맞는 데이터의 색인 찾기]
 ```{r}
 # 1.which(): 조건이 참인 색인 반환
 which(
@@ -605,7 +605,7 @@ which.min(iris$Sepal.Length)
 ```
 
 
-# 그룹별 연산
+# [9.그룹별 연산]
 ```{r}
 # aggregate: 데이터를 분할하고 각 그룹마다 요약치 계산
 aggregate(
@@ -635,7 +635,7 @@ tapply(iris$Sepal.Width, iris$Species, mean)
 ```
 
 
-# 편리한 처리를 위한 데이터의 재표현
+# [10.편리한 처리를 위한 데이터의 재표현]
 ```{r}
 # A B C
 # 3 5 4

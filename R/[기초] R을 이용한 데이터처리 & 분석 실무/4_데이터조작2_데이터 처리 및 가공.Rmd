@@ -1,0 +1,208 @@
+---
+title: "4_데이터조작2_데이터 처리 및 가공"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# [1.데이터 처리 및 가공 패키지]
+```{r}
+install.packages("sqldf")
+install.packages("plyr")
+install.packages("reshape2")
+install.packages("data.table")
+install.packages("foreach")
+install.packages("doParallel")
+install.packages("testthat")
+```
+
+```{r}
+library(sqldf)
+library(plyr)
+library(reshape2)
+library(data.table)
+library(foreach)
+library(doParallel)
+library(testthat)
+```
+
+
+# [2.SQL을 사용한 데이터처리]
+```{r}
+# sqldf::sqldf(): 반환값은 데이터프레임
+sqldf::sqldf(
+  x,                        # SQL SELECT문
+  stringsAsFactors = FALSE  # 문자열을 팩터로 반환할지 문자열로 반환할지 여부
+)
+
+# 붓꽃 종 확인하기
+sqldf("select distinct Species from iris")
+#      Species
+# 1     setosa
+# 2 versicolor
+# 3  virginica
+
+# setosa에 속하는 데이터에서 Sepal.Length의 평균을 구하기
+# 전체 문장을 ''하고, 안에 것들을 ""로 처리해야함
+sqldf('select avg("Sepal.Length") from iris where Species="setosa"')
+#   avg(Sepal.Length)
+# 1             5.006
+
+mean(subset(iris, Species == "setosa")$Sepal.Length)
+# [1] 5.006
+```
+
+```{r}
+# 종별 Sepal.Length의 평균 구하기: sqldf
+sqldf('select Species, avg("Sepal.Length") from iris group by Species')
+#      Species  avg(Sepal.Length)
+# 1     setosa              5.006
+# 2 versicolor              5.936
+# 3  virginica              6.588
+
+# 종별 Sepal.Length의 평균 구하기: split, sapply
+sapply(split(iris$Sepal.Length, iris$Species), mean)
+#    setosa versicolor  virginica 
+#     5.006      5.936      6.588
+```
+
+
+# [3.pylr패키지를 이용한 분할, 적용, 재조합을 통한 데이터 분석]
+```{r}
+# 데이터 분할(split) -> 함수적용(apply) -> 재조합(combine)
+# 데이터입력: 배열, 데이터프레임, 리스트
+# 데이터출력: 배열, 데이터프레임, 리스트, 아무결과 출력하지않기
+# a : 입력, 출력 : 배열 
+# d : 입력, 출력 : 데이터프레임
+# l : 입력, 출력 : 리스트
+# _ :       출력 : 아무런 출력없음
+```
+
+# adply(): 배열을 받아 데이터프레임을 반환
+```{r}
+plyr::adply(
+  .data = ,     # 행렬,배열,데이터프레임
+  .margins = ,  # 함수적용방향 -> 1(행), 2(열), c(1,2)(행열)
+  .fun = NULL   # .margin방향으로 잘려진 데이터에 적용할 함수
+)
+```
+
+```{r}
+# apply() vs adply()
+# 1.apply()
+#  - 행방향으로 처리할 때 각 컬럼에 서로 다른데이터 타입이 섞여있으면, 예상치 못한 타입변환이 발생할 수 있음
+#  - 한가지 타입만 저장할 수 있는 행렬로 결과를 반환하기 때문
+apply(iris[,1:4], 1, function(row) {print(row)})  # 모두 숫자 -> 결과: 숫자
+apply(iris, 1, function(row) {print(row)})  # 숫자+문자 -> 결과: 문자
+
+# 2.adply()
+# 조건에 맞으면 결과를 새로운 컬럼에 기록하는 예
+adply(iris,
+      1,
+      function(row) {row$Sepal.Length >= 5.0 &
+                     row$Species == "setosa"})
+# 기존 의 모양에 컬럼추가
+#   Sepal.Length  Sepal.Width Petal.Length  Petal.Width   Species      V1  
+# 1          5.1          3.5          1.4          0.2    setosa    TRUE
+# 2          4.9          3.0          1.4          0.2    setosa   FALSE
+# 3          4.7          3.2          1.3          0.2    setosa   FALSE
+
+# 위와 같은 작업 후 함수 내부에서 데이터 프레임으로반환
+adply(iris,
+      1,
+      function(row) {
+        data.frame(sepal_ge_5_setosa = c(row$Sepal.Length >= 5.0 &
+                     row$Species == "setosa"))})
+# 새로운 데이터 프레임
+#   Sepal.Length  Sepal.Width Petal.Length  Petal.Width   Species      V1  
+# 1          5.1          3.5          1.4          0.2    setosa    TRUE
+# 2          4.9          3.0          1.4          0.2    setosa   FALSE
+# 3          4.7          3.2          1.3          0.2    setosa   FALSE
+```
+
+# ddply()
+```{r}
+plyr::ddply(
+  .data = ,
+  .variables = ,  # 데이터를 그룹 지을 변수명
+  .fun = NULL
+)
+
+# adply(): 행또는 컬럼단위로 함수 적용
+# ddply(): .variales에 나열한 컬럼에 따라 데이터를 나눈뒤 함수를 적용
+plyr::ddply(iris,
+            .(Species),
+            function(sub) {
+              data.frame(sepal.width.mean = mean(sub$Sepal.Width))})
+#      Species   sepal.width.mean
+# 1     setosa              3.428
+# 2 versicolor              2.770
+# 3  virginica              2.974
+
+# 여러변수로 그룹짓기
+plyr::ddply(iris,
+            .(Species, Sepal.Length > 5.0),
+            function(sub) {
+              data.frame(sepal.width.mean = mean(sub$Sepal.Width))})
+#      Species  Sepal.Length > 5.0  sepal.width.mean
+# 1     setosa               FALSE           3.20357
+# 2     setosa                TRUE           3.71354
+# 3 versicolor               FALSE           2.23333
+# 4 versicolor                TRUE           2.80426
+# 5  virginica               FALSE           2.50000
+# 6  virginica                TRUE           2.98367
+```
+
+```{r}
+# baseball데이터: 선수id가 해당연도year에 기록한 성적이 들어있다.
+head(baseball)
+head(subset(baseball, id == "ansonca01"))
+
+str(baseball)  # id, year, stint, team, lg, g, ab, r, h, X2b ,,,
+# ddply()를 이용해 각 선수가 출전한 게임 수의 평균을 구하자.
+# id를 사용해 그룹을 짓고, 분할된 그룹마다 g의 평균을 계산한다.
+ddply(baseball, .(id), function(sub) {mean(sub$g)})
+#          id         V1
+# 1 aaronha01  143.39130
+# 2 abernte02   40.05882
+# 3 adairje01   77.66667
+# 4 adamsba01  115.23529
+# ...
+```
+
+# 그룹마다 연산을 쉽게 수행하기기
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
