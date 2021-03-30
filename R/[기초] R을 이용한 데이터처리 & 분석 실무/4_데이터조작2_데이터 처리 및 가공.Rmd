@@ -172,37 +172,198 @@ ddply(baseball, .(id), function(sub) {mean(sub$g)})
 # ...
 ```
 
-# 그룹마다 연산을 쉽게 수행하기기
+# 그룹마다 연산을 쉽게 수행하기
 ```{r}
+# base::transforn(): 객체 변환
+# 데이터프레임 data에 ...에 지정한 연산을 수행한 뒤 그 결과를 저장한 새로운 컬럼을 추가한 데이터 프레임 반환
+base::transform(
+  data,  # 변환할 객체
+  ...    # 테그 = 값 형태의 인자들
+)
+
+# 데이터를 선수id로 분할하여 그룹지은 후, 각 그룹에서 year의 최솟값과 현재행의 year차이를 cyear에 저장하기
+head(ddply(baseball, .(id), transform, cyear = year - min(year) + 1))
+#          id year stint team lg   g  ab   r   h X2b X3b hr rbi sb cs bb so ibb hbp sh sf gidp cyear
+# 1 aaronha01 1954     1  ML1 NL 122 468  58 131  27   6 13  69  2  2 28 39  NA   3  6  4   13     1
+# 2 aaronha01 1955     1  ML1 NL 153 602 105 189  37   9 27 106  3  1 49 61   5   3  7  4   20     2
+# 3 aaronha01 1956     1  ML1 NL 153 609 106 200  34  14 26  92  2  4 37 54   6   2  5  7   21     3
+# 4 aaronha01 1957     1  ML1 NL 151 615 118 198  27   6 44 132  1  1 57 58  15   0  0  3   13     4
+# 5 aaronha01 1958     1  ML1 NL 153 601 109 196  34   4 30  95  4  1 59 49  16   1  0  3   21     5
+# 6 aaronha01 1959     1  ML1 NL 154 629 116 223  46   7 39 123  8  0 51 54  17   4  0  9   19     6
 ```
 
 ```{r}
+# plyr::mutate(): 데이터프레임에 새로운 컬럼을 추가하거나 기존 컬럼 수정
+plyr::mutate(
+  .data,  # 변환할 데이터 프레임
+  ...     # 새로운 컬럼 정의. 컬럼명 = 값 형식 
+)
+
+# base::transform()을 개선한 plyr::mutate()
+# 여러컬럼을 데이터 프레임에 추가할 때 바로 앞서 추가한 컬럼을 뒤에 추가하는 컬럼에서 참조할 수 있음
+head(ddply(baseball, .(id), mutate, cyear = year - min(year) + 1, log_cyear = log(cyear)))
 ```
 
 ```{r}
+# plyr::summarise(): 데이터프레임 요약
+plyr::summarise(
+  .data,  # 요약할 데이터 프레임
+  ...     # 변수=값 형태의 인자들
+)
+
+# 선수의 최초 데이터가 몇년도인지 확인
+head(ddply(baseball, .(id), summarise, minyear = min(year), maxyear = max(year)))
 ```
 
 ```{r}
+# base::subset(): 벡터, 행렬, 데이터프레임의 일부 반환
+base::subset(
+  x,       # 일부를 택할 데이터
+  subset,  # 데이터를 선택할지 여부를 지정한 논리값 벡터
+  select   # 선택할 컬럼의 벡터, 제외할 컬럼은 - 붙이기
+)
+
+# 선수별로 가장 많은 수의 게임을 플레이한 해의 기록을 찾기
+head(ddply(baseball, .(id), subset, g==max(g)))
+```
+
+# mdply(): 데이터 프레임이나 배열에 저장된 인자로 함수를 호출하고 결과를 데이터프레임으로 반환
+```{r}
+plyr::mdply(
+  .data = ,  # 인자로 사용할 행렬 또는 데이터프레임
+  .fun =     # 호출하 함수
+)
+
+# 평균과 표준편차를 저장한 데이터프레임
+x <- data.frame(mean=1:5, sd=1:5)
+
+# rnorm(): 평균이 mean이고 표준편차가 sd인 n개의 난수를 발생시키는 함수
+mdply(x, rnorm, n=2)
+#   mean sd        V1         V2
+# 1    1  1  2.931512 -0.2720339
+# 2    2  2  3.969422  4.8632019
+# 3    3  3 -1.712844  0.5427824
+# 4    4  4  7.699660  5.1748210
+# 5    5  5  8.057774 15.6745273
+```
+
+
+# [4.데이터 구조의 변형과 요약]
+# 개요
+```{r}
+# reshape2는 데이터의 모양을 바꾸거나, 그룹별 요약값을 계산하는 함수를 담고있음
+# 변환된 데이터는 측정치를 variable과 value라는 두 컬럼으로 표현 -> 데이터의 통계치 계산이 편리
+head(french_fries)
+colnames(french_fries)
+# "time": 몇주차 실험, "treatment": 사용한 식용류 종류, "subject": 실험대상자
+# "rep": 같은내용 여러번 측정, "potato": 감자맛, "buttery": 버터맛,
+# "grassy": 풀맛, "rancid": 신맛, "painty": 안좋은냄새
+```
+
+# melt(): 식별자id, 측정변수 variable, 측정치 value형태로 데이터 재구성
+```{r}
+reshape2::melt.data.frame(
+  data = ,          # melt할 데이터
+  id.vars = ,       # 식별자 컬럼들
+  measure.vars = ,  # 측정치 컬럼들, 이 값이 생략되면 id.vars에 해당하지 않는 모든 컬럼이 측정치 컬럼으로 취급
+  na.rm = FALSE     # NA인 행을 결과에 포함시킬지 여부. FALSE는 NA를 제거하지 않음
+)
+
+# french_fries에서 식별자 가능부분: time, treatment, subject, rep
+# french_fries에서 측정변수와 측정값 가능부분: potato, buttery, grassy, rancid, painty
+m <- melt(french_fries, id.vars = 1:4)
+head(m, 3)
+#   time treatment subject rep variable value
+# 1    1         1       3   1   potato   2.9
+# 2    1         1       3   2   potato  14.0
+# 3    1         1      10   1   potato  11.0
+
+# 여러 컬럼으로 나열된 측정치들을 variable, value두개 컬럼을 사용해 여러행으로 변환하는 것
+# 이렇게 되면, variable마다 그룹 지어 통계치 계산작업이 간단
+
+# 식용유treatment마다 측정 변수의 평균을 구하는 코드
+ddply(m, .(variable), summarise, mean = mean(value, na.rm=TRUE))
+#   variable      mean
+# 1   potato 6.9525180
+# 2  buttery 1.8236994
+# 3   grassy 0.6641727
+# 4   rancid 3.8522302
+# 5   painty 2.5217579
 ```
 
 ```{r}
+# complete.cases -> 행의 모든 값이 NA가 아닌경우 TRUE, 하나라도 NA를 포함하면 FALSE
+french_fries[!complete.cases(french_fries), ]
+
+# NA를 포함하는 측정치를 melt()시 제외하려면, na.rm = TRUE
+m <- melt(id = 1:4, french_fries, na.rm = TRUE)
 ```
 
 ```{r}
+
 ```
 
 ```{r}
+
 ```
 
 ```{r}
+
 ```
 
 ```{r}
+
 ```
 
 ```{r}
+
 ```
 
 ```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
 ```
 
