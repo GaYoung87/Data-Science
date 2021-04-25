@@ -299,6 +299,57 @@ french_fries[!complete.cases(french_fries), ]
 m <- melt(id = 1:4, french_fries, na.rm = TRUE)
 ```
 
+# cast(): 결과로 얻고자 하는 데이터 타입에 따라 dcast():데이터프레임, acast():벡터/행렬/배열로 구분
+```{r}
+reshape2::dcast(
+  data = ,         # melt()된 데이터
+  formula = ,      # 변환 포뮬러. 규칙1) "id변수 ~ variable변수"
+                   #              규칙2) 아무 변수도 지정하지 않으려면 .을 사용
+                   #              규칙3) formula에 명시적으로 나열되지 않은 모든 변수를 포함하려면 ...을 사용
+  fun.aggregate =  # 데이터 재구성시 여러행이 한 셀에 모일경우 사용할 집합함수
+)
+
+# french_fries데이터를 melt()후 dcast를 이용해 원데이터로 변환
+m <- melt(french_fries, id.vars = 1:4)
+View(m)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
 ```{r}
 
 ```
