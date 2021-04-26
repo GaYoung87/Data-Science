@@ -310,10 +310,21 @@ reshape2::dcast(
 )
 
 # french_fries데이터를 melt()후 dcast를 이용해 원데이터로 변환
+# 
+View(french_fries)
 m <- melt(french_fries, id.vars = 1:4)
 View(m)
+
+r <- dcast(m, time + treatment + subject + rep ~ ...)
+View(r)
+
+# 행명칭(rownames)이 불필요하게 복잡해져, 행명칭을 제거하면, 자동적으로 R이 순차적으로 행명칭을 부여
+rownames(r) <- NULL
+rownames(french_fries) <- NULL  # french_fries에 특이하게 부여된 행번호를 무시
+identical(r, french_fries)  # 동일한 객체인지 확인
 ```
 
+# 데이터 요약
 ```{r}
 
 ```
