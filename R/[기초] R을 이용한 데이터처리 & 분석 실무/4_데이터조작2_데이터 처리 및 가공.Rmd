@@ -310,35 +310,130 @@ reshape2::dcast(
 )
 
 # french_fries데이터를 melt()후 dcast를 이용해 원데이터로 변환
-# 
-View(french_fries)
 m <- melt(french_fries, id.vars = 1:4)
 View(m)
 
 r <- dcast(m, time + treatment + subject + rep ~ ...)
 View(r)
 
-# 행명칭(rownames)이 불필요하게 복잡해져, 행명칭을 제거하면, 자동적으로 R이 순차적으로 행명칭을 부여
-rownames(r) <- NULL
-rownames(french_fries) <- NULL  # french_fries에 특이하게 부여된 행번호를 무시
-identical(r, french_fries)  # 동일한 객체인지 확인
+# r과 비교
+rr <- dcast(m, time + treatment + subject ~ ...)
+View(rr)
+
+rownames(r) <- NULL  #  특이하게 부여된 행 번호 삭제
+rownames(french_fries) <- NULL
+identical(r, french_fries)  # 완전 동일한 객체인지 확인
 ```
 
 # 데이터 요약
 ```{r}
+# cast()는 데이터의 요약값 계산 가능
+# melt()된 데이터에 plyr패키지만 잘 적용해도 요약치 계산 가능
 
+# reshape2에서 데이터 요약을 수행하려면 melt()에서 사용한 것보다 적은 개수의 식별자를 dcast()의 formula에 지정
+  # melt()시 사용한 french_fries의 식별자는 time, treatment, subject, rep이었고, 
+  # dcast()에서 복구할 때 time + treatment + subject + rep ~ ...
+    # time, treatment, subject, rep 중에서 ~왼편에서 없앤다면, dcast()시 여러 행이 하나의 셀로 모이게 된다.
+
+m <- melt(french_fries, id.vars = 1:4)
+View(m)
+
+d <- dcast(m, time ~ variable)
+View(d)
+
+# time에 따라 평균값이 어떻게 달라지는지 보여줌
+d_by_time <- dcast(m, time ~ variable, mean, na.rm=TRUE)
+View(d_by_time)
+
+# 각 time마다 (treatment, variable) 순서 쌍에 해당하는 value의 평균 계산
+d_by_time_set <- dcast(m, time ~ treatment + variable, mean, na.rm=TRUE)
+View(d_by_time_set)
+
+# d_by_time_set와 같은 연산
+ddply_cal <- ddply(m, .(time, treatment, variable), function(rows) {
+  return(mean(rows$value, na.rm=TRUE))
+  })
+View(ddply_cal)
+#   time  treatment  variable          V1
+# 1    1          1    potato   7.9250000
+# 2    1          1   buttery   1.7958333
+# 3    1          1    grassy   0.9041667
+# 4    1          1    rancid   2.7583333
+# 5    1          1    painty   2.1500000
 ```
 
-```{r}
 
+# [5.데이터테이블: 더 빠르고 편리한 데이터 프레임]
+# 개요
+```{r}
+# 데이터 테이블은 데이터 프레임을 대신해 사용할 수 있는 빠르고 편리한 데이터 타입
+# 장점1. 속도
+#        - 조건을 만족하는 데이터를 색인을 사용해 빠르게 찾을 수 있음
+#        - 참조를 통한 데이터 갱신 지원해 데이터 복사에 따른 비용 감소
+# 장점2. 연산의편의성
+install.packages("data.table")
+library(data.table)
 ```
 
+# 데이터 테이블 생성
 ```{r}
+# 데이터 테이블 생성: 반환 값은 data.table객체
+data.table::data.table(
+  ...,                                           # tag=value 형태로 컬럼과 값을 지정
+  stringsAsFactors = default.stringsAsFactors()  # 문자열을 팩터로 저장할지 여부
+)
 
+# 데이터프레임을 데이터 테이블로 변환: 반환 값은 data.table객체
+data.table::as.data.table(
+  df  # 데이터프레임
+)
+
+# data.table클래스의 모든 객체 나열: 모든 데이터테이블 객체의 목록을 저장한 데이터 테이블 반환
+data.table::tables(
+  
+)
+
+# 1.데이터프레임을 데이터 테이블로 변환
+iris_table <- as.data.table(iris)
+View(iris_table)
+#      Sepal.Length Sepal.Width Petal.Length Petal.Width   Species
+#   1:          5.1         3.5          1.4         0.2    setosa
+#   2:          4.9         3.0          1.4         0.2    setosa
+#   3:          4.7         3.2          1.3         0.2    setosa
+#   4:          4.6         3.1          1.5         0.2    setosa
+#   5:          5.0         3.6          1.4         0.2    setosa
+#  ---                                                            
+# 146:          6.7         3.0          5.2         2.3 virginica
+# 147:          6.3         2.5          5.0         1.9 virginica
+# 148:          6.5         3.0          5.2         2.0 virginica
+# 149:          6.2         3.4          5.4         2.3 virginica
+# 150:          5.9         3.0          5.1         1.8 virginica
+
+
+# 2. 데이터테이블 직접 생성
+x <- data.table(x = c(1, 2, 3), y = c("a", "b", "c"))
+#    x y
+# 1: 1 a
+# 2: 2 b
+# 3: 3 c
+
+
+# 3.데이터 테이블 목록확인
+tables()
+#          NAME NROW NCOL MB                                                      COLS KEY
+# 1: iris_table  150    5  0 Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species    
+# 2:          x    3    2  0                                                       x,y    
+# Total: 0MB
 ```
 
+# 데이터 접근과 그룹 연산
 ```{r}
+DT <- as.data.table(iris)
+DT[1,]
+DT[DT$Species == "setosa", ]
 
+# 1행의 Sepal.Length에 접근
+DT[1, Sepal.Length]  # 데이터프레임에서는 ""붙임
 ```
 
 ```{r}
