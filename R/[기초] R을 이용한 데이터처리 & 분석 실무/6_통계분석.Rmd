@@ -1,0 +1,276 @@
+---
+title: "6_통계분석"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# [1.난수생성 및 분포함수]
+```{r}
+# 확률 분포 및 관련 함수
+#                    난수   확률밀도함수   분포함수   분위수함수
+#   - 이항분포     rbinom         dbinom     pbinom       qbinom
+#   - F분포            rf             df         pf           qf
+#   - 기하분포      rgeom          dgeom      pgeom        qgeom
+#   - 초기하분포   rhyper         dhyper     phyper       qhyper
+#   - 음이항분포  rnbinom        dnbinom    pnbinom      qnbinom
+#   - 정규분포      rnorm          dnorm      pnorm        qnorm
+#   - 포아송분포    rpois          dpois      ppois        qpois
+#   - t분포            rt             dt         pt           qt
+#   - 연속균등분포  runif          dunif      punif        qunif
+
+rnorm(100, 0, 10) # 평균0, 표편10, 난수100개
+plot(density(rnorm(10000, 0, 10)))
+```
+
+
+# [2.기초통계량]
+# 표본평균, 표본분산, 표본표준편차
+```{r}
+# 표본평균(X바), 표본분산(S^2), 표본표준편차(루트(S^2))
+# 표본평균
+mean(
+  x,
+  trim = 0,       # trim은 데이터를 크기 순서로 나열한 뒤 
+                  # 값이 작은 쪽에서 얼마만큼의 데이터를 제거한 후 
+                  # 평균을 계산할지를 (0, 0.5) 사이의 값으로 지정
+                  # 이렇게 계산한 평균을 절사평균
+  na.rm = FALSE,  # 평균 계산 전 NA제거 여부
+  ...
+)
+
+# 표본분산
+var(x,
+    na.rm = FALSE
+)
+
+# 표본표준편차
+sd(x,
+    na.rm = FALSE
+)
+
+mean(1:5)
+var(1:5)
+sum((1:5-mean(1:5))^2)/(5-1)  # var(1:5)와 동일
+sd(1:5)
+```
+
+# 다섯수치 요약
+```{r}
+# 다섯수치: 최솟값, 제1사분위수, 중앙값, 제3사분위수, 최댓값
+fivenum(
+  x,           # 숫자벡터
+  na.rm = TRUE
+)
+
+fivenum(1:11)
+# [1]  1.0  3.5  6.0  8.5 11.0
+summary(1:11)
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#    1.0     3.5     6.0     6.0     8.5    11.0 
+```
+
+# 최빈값
+```{r}
+# 분할표 작성
+table(
+  ...  # 팩터로 해석할 수 있는 하나 이상의 객체
+)
+
+# 최댓값이 저장된 위치의 색인 반환
+which.max(
+  x  # 숫자 벡터
+)
+
+x <- factor(c("a", "b", "c", "c", "c", "d", "d"))
+# [1] a b c c c d d
+# Levels: a b c d
+
+table(x)
+# x
+# a b c d 
+# 1 1 3 2 
+
+which.max(table(x))
+# c 
+# 3
+
+names(table(x))[3]
+# [1] "c"
+```
+
+
+# [3.표본추출]
+# 개요
+```{r}
+# 훈련데이터 80%, 테스트데이터 20%
+```
+
+# 단순 임의 추출
+```{r}
+# 표본 추출 수행
+sample(
+  x,                
+  size,
+  replace = FALSE,  # 복원추출 여부
+  prob = NULL  # 데이터가 뽑힐 가중치
+               # x=c(1, 2, 3)에서 2개의 표본을 뽑되 
+               # 각 표본이 뽑힐 확률을 50%, 20%, 30%라고 한다면 size=2, prob=c(5,2,3)
+               # prob합이 1일필요는 없다
+)
+
+sample(1:10, 5)  # [1]  9  8 10  7  3
+sample(1:10, 5, replace = TRUE)  # [1] 9 2 9 1 3
+```
+
+# 가중치를 고려한 표본추출
+```{r}
+# 데이터의 중요도, 발생빈도가 다르다면 이를 고려한 표본추출 진행되어야함
+sample(1:10, 5, replace = TRUE, prob = 1:10)
+```
+
+# 층화 임의 추출 
+```{r}
+# 데이터가 중첩없이 분할될 수 있는 경우 + 분할의 성격이 명확히 다른 경우
+
+# ex) 남성20% 여성80% -> 평균키 예상
+#     표본비율: 남성20% 여성80% 유지 -> 층=남성/여성 구분
+
+install.packages("sampling")
+library(sampling)
+```
+
+```{r}
+# 층화임의추출 수행
+sampling::strata(
+  data,
+  stratanames = NULL,
+  size = ,
+  method = c("srswor", "srswr", "poisson", "systematic"),
+  pik = ,
+  description = FALSE
+)
+
+# 표본추출을 수행한 후 데이터프레임으로부터 값을 추출
+sampling::getdata(
+  data,
+  m  # 선택된 유닛에 대한 벡터 또는 표본 데이터프레임
+)
+
+# 포아송추출: 데이터의 추출 확률을 다르게 설정하고 데이터를 독립적으로 추출하는 경우
+
+x <- strata(c("Species"), size = c(3, 3, 3), method="srswor", data=iris)
+#        Species ID_unit Prob Stratum
+# 9       setosa       9 0.06       1
+# 12      setosa      12 0.06       1
+# 27      setosa      27 0.06       1
+# 55  versicolor      55 0.06       2
+# 56  versicolor      56 0.06       2
+# 63  versicolor      63 0.06       2
+# 101  virginica     101 0.06       3
+# 111  virginica     111 0.06       3
+# 138  virginica     138 0.06       3
+
+getdata(iris, x)
+#     Sepal.Length Sepal.Width Petal.Length Petal.Width    Species ID_unit Prob Stratum
+# 9            4.4         2.9          1.4         0.2     setosa       9 0.06       1
+# 12           4.8         3.4          1.6         0.2     setosa      12 0.06       1
+# 27           5.0         3.4          1.6         0.4     setosa      27 0.06       1
+# 55           6.5         2.8          4.6         1.5 versicolor      55 0.06       2
+# 56           5.7         2.8          4.5         1.3 versicolor      56 0.06       2
+# 63           6.0         2.2          4.0         1.0 versicolor      63 0.06       2
+# 101          6.3         3.3          6.0         2.5  virginica     101 0.06       3
+# 111          6.5         3.2          5.1         2.0  virginica     111 0.06       3
+# 138          6.4         3.1          5.5         1.8  virginica     138 0.06       3
+```
+
+# 계통 추출
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+# [4.분할표]
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+# [5.적합도 검정]
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+# [6.상관분석]
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+# [7.추정 및 검정]
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
