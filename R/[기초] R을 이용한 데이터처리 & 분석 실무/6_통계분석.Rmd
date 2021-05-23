@@ -625,7 +625,7 @@ t.test(
 )
 
 t.test(
-  formula,  # lhs~rhs형태로 쓰며 lhs는 검정에 사용할 값, rhs는 두 개의 그룹을 ㅡ 뜻하는 팩트
+  formula,  # lhs~rhs형태로 쓰며 lhs는 검정에 사용할 값, rhs는 두 개의 그룹을 뜻하는 팩트
   data  # 포뮬러가 적용될 행렬 또는 데이터 프레임
 )
 ```
@@ -639,80 +639,211 @@ t.test(x)
 ```
 
 # 독립 이표본 평균
+## 이론적 배경
 ```{r}
+# 서로 독립인 두개의 표본 집단이 있는 경우
+# X바(m개) ~ N(mu1, 시그1마^2/m), Y바(n개) ~ N(mu2, 시그마2^2/n)
+# X바-Y바 ~ N(mu1 - mu2, 시그마1^2/m + 시그마2^2/n)
+# ((X바-Y바) - (mu1 - mu2)) / (root(시그마1^2/m) + root(시그마2^2/n)) ~ N(0,1)
 
+# 1) 시그마1 = 시그마2
+# 표본분산S^2p = ((m-1)S1^2 + (n-1)S2^2) / (m + n - 2)
+# ((X바-Y바) - (mu1 - mu2)) / (Sp * root(1/m + 1/n)) ~ t(m+n-2)
 ```
 
+## 추정 및 검정의 예
 ```{r}
+# extra: 수면시간의 증가량 / group: 사용한 약물의 종류 / id: 환자 식별번호
+sleep_data <- sleep[,-3]  # 독립이표본을 살펴보기 위해 환자 식별번호 없다고 가정
 
-```
+library(MASS)
+tapply(sleep_data$extra, sleep_data$group, mean)
+#    1     2
+# 0.75  2.33
 
-```{r}
+library(doBy)
+doBy::summaryBy(extra ~ group, sleep_data)
+#   group  extra.mean
+# 1     1        0.75
+# 2     2        2.33
 
-```
+# 1) 이분산이 같은지 검정
+#    귀무가설: 분산의 비가 1이다
+var.test(extra ~ group, sleep_data)
+#   F test to compare two variances
+# data:  extra by group
+# F = 0.79834, num df = 9, denom df = 9, p-value = 0.7427
+# alternative hypothesis: true ratio of variances is not equal to 1
+# 95 percent confidence interval:
+#  0.198297 3.214123
+# sample estimates:
+# ratio of variances 
+#          0.7983426
+# 해석 : p-value > 0.05이므로 귀무가설 기각할 수 없다 -> 분산은 같다
 
-```{r}
-
+# 2) 분산이 같다는 가정하에 t.test()진행
+#    귀무가설: 모평균에 차이가 없다
+t.test(extra ~ group, data = sleep_data, paired = FALSE, var.equal = TRUE)
+#	 Two Sample t-test
+# data:  extra by group
+# t = -1.8608, df = 18, p-value = 0.07919
+# alternative hypothesis: true difference in means is not equal to 0
+# 95 percent confidence interval:
+#  -3.363874  0.203874
+# sample estimates:
+# mean in group 1 mean in group 2 
+#            0.75            2.33 
+# 해석: p-value > 0.05이므로 귀무가설 기각할 수 없음
+# 신뢰구간(-3.363874, 0.203874)
 ```
 
 # 짝지은 이표본 평균
+## 이론적 배경
 ```{r}
+# ex1)두가지 약물을 10명에게 투여해 수면시간의 증가 측정
+# 독립 이표본 평균 : 둘 중 하나의 약물을 10명에게 투여해 수면시간의 증가 측정
 
+# ex2) 약효과를 보기위해 (약 섭취 전 체중, 약 섭취 후 체중) = (Xi, Yi)
+
+# (Xi, Yi)가 있을 때, Di = Xi-Yi가 정규분포를 따른다고 가정
+# D바 ~ N(muD, 시그마D^2/n)
+# (D바 - muD) / (SD / root(n)) ~ t(n-1)
 ```
 
+## 추정 및 검정의 예
 ```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
+# 귀무가설: 모평균의 차이가 0이다
+with(sleep, t.test(extra[group == 1], extra[group == 2], paired = TRUE))
+# 	Paired t-test
+# data:  extra[group == 1] and extra[group == 2]
+# t = -4.0621, df = 9, p-value = 0.002833
+# alternative hypothesis: true difference in means is not equal to 0
+# 95 percent confidence interval:
+#  -2.4598858 -0.7001142
+# sample estimates:
+# mean of the differences 
+#                   -1.58
+# 해석: p-value < 0.05이므로 귀무가설 기각 -> 두 수면제의 수면시간 증가 정도가 다름
+# 신뢰구간(-2.4598858, -0.7001142) -> 독립이표본 검정보다 추정의 정확도가 높다
+# 추정의 정확도 = 추정치의 분산이 작다 -> 신뢰구간 좁아짐
 ```
 
 # 이표본 분산
+## 이론적 배경
 ```{r}
-
+# X(m개), Y(n개)가 독립이고 각각 정규분포 따른다면 F분포를 따른다
+# (S1^2/시그마1^2) / (S2^2/시그마2^2) ~ F(m-1, n-1)
+# 신뢰구간 : ((S1^2/S2^2)/F(n-1,m-1;알파/2), (S1^2/S2^2)/F(n-1,m-1;1-알파/2))
 ```
 
+## 추정 및 검정의 예
 ```{r}
+# 분산ㅂF검정
+# 귀무가설: 모분산 비가 ratio와 같다
+var.test(x,  # 숫자 벡터
+         y,  # 숫자 벡터
+         ratio = 1,  # 분산 비에 대한 가설
+         alternative = c("two.sided", "less", "greater"),
+         ...
+         )
 
+var.test(
+  formula,  # lhs~rhs형태로 쓰며 lhs는 검정에 사용할 값, rhs는 두 개의 그룹을 뜻하는 팩트
+  data      # 포뮬러가 적용될 행렬 또는 데이터 프레임
+)
+
+with(iris, var.test(Sepal.Width, Sepal.Length))
+# 	F test to compare two variances
+# data:  Sepal.Width and Sepal.Length
+# F = 0.27706, num df = 149, denom df = 149, p-value = 3.595e-14
+# alternative hypothesis: true ratio of variances is not equal to 1
+# 95 percent confidence interval:
+#  0.2007129 0.3824528
+# sample estimates:
+# ratio of variances 
+#          0.2770617
 ```
 
 # 일표본 비율
+## 이론적 배경
 ```{r}
+# 모집단에서 표본을 추출해 그 표본에서 계산한 비로부터 모집단의 비를 추정 및 가설검정
+# ex) 투표자 중 찬성 반대 비율 추정
 
+# 베르누이 시행 -> X ~ B(n, p)
+# n이 크면 정규분포로 근사 -> X ~ N(np, np(1-p))
+# p바 ~ N(p, p(1-p)/n)
+# 95% 신뢰구간 (p바 - Z알파/2 * root(p바(1-p바)/n), p바 + Z알파/2 * root(p바(1-p바)/n))
 ```
 
+## 추정 및 검정의 예
 ```{r}
+# 비율에 대한 가설 검정
+# 귀무가설: 두 그룹의 비율이 같다 / 비율이 p와 같다
+prop.test(
+  x,  # 성공횟수를 저장한 벡터 또는 성공과 실패수를 저장한 1x2, 2x2행렬
+  n,  # 전체 시행 수
+  p = NULL,  # 비율
+  alternative = c("two.sided", "less", "greater")
+)
 
-```
 
-```{r}
+# ex1. 동전100번에 앞면42번
+# 귀무가설: 동전의 앞면이 나오는 비율이 50%다
+prop.test(42, 100)
+# 	1-sample proportions test with continuity correction
+# data:  42 out of 100, null probability 0.5
+# X-squared = 2.25, df = 1, p-value = 0.1336
+# alternative hypothesis: true p is not equal to 0.5
+# 95 percent confidence interval:
+#  0.3233236 0.5228954
+# sample estimates:
+#    p 
+# 0.42
+# 해석: p-value>0.05이므로 귀무가설 기각 불가
+# 신뢰구간(0.3233236, 0.5228954)
 
-```
-
-```{r}
-
+# 이항분포로부터의 신뢰구간 직접 계산
+binom.test(42, 100)
+# 	Exact binomial test
+# data:  42 and 100
+# number of successes = 42, number of trials = 100, p-value = 0.1332
+# alternative hypothesis: true probability of success is not equal to 0.5
+# 95 percent confidence interval:
+#  0.3219855 0.5228808
+# sample estimates:
+# probability of success 
+#                   0.42
+# 해석: p-value>0.05이므로 귀무가설 기각 불가
+# 신뢰구간(0.3219855, 0.5228808)
 ```
 
 # 이표본 비율
+## 이론적 배경
 ```{r}
-
+# 독립인 두 집단 X, Y가 이항분포를 따른다고 하자
+# X ~ B(n1, p1)
+# Y ~ B(n2, p2)
+# p1바 - p2바 ~ N(p1 - p2, (p1(1-p1)/n1 + p2(1-p2)/n2)
+# 95%신뢰구간 ((p1바 - p2바) - Za/2 * root(p1바(1-p1바)/n1 + p2바(1-p2바)/n2))
 ```
 
+## 추정 및 검정의 예
 ```{r}
-
-```
-
-```{r}
-
-```
-
-```{r}
-
+# ex. 두 개의 동전을 각각 100회, 90회 던졌을 때, 각각 앞면이 45회, 55회 나왔다고 하자. 두 동전의 앞면이 나올 확률은 같은ㅣ 확인
+# 귀무가설: 두 동전의 앞면이 나올 확률은 같다
+prop.test(c(45, 55), c(100, 90))
+# 	2-sample test for equality of proportions with continuity correction
+# data:  c(45, 55) out of c(100, 90)
+# X-squared = 4.3067, df = 1, p-value = 0.03796
+# alternative hypothesis: two.sided
+# 95 percent confidence interval:
+#  -0.31185005 -0.01037217
+# sample estimates:
+#    prop 1    prop 2 
+# 0.4500000 0.6111111
+# 해석: p-value < 0.05이므로 귀무가설 기각 -> 두 동전의 앞면이 나올 확률은 다르다
+# 신뢰구간 (-0.31185005, -0.01037217)
 ```
 
 
